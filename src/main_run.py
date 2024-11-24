@@ -1,7 +1,9 @@
 import neptune
+import configparser
+from datetime import date
 from run_functions import *
 from util_functions import *
-from evaluation_figures import *
+
 
 def main():
     # read config
@@ -67,16 +69,17 @@ def several_runs(config, ls_labels, ls_models, ls_input_settings, ls_transcript_
                         config['input_data_selection']['transcript_regions'] = region
                         config['general']['random_seed'] = str(rand)
                         if verbose:
-                            print(40*'=')
-                            print(40*'=')
-                            print("Starting {0} with random seed {1} for model {2}, for label {3}, with test cell line {4} at {5}".format(
-                                  config.get('input_data_selection', 'rbp_input_for_regressor'),
-                                  config.get('general', 'random_seed'),
-                                  config.get('model_selection', 'model_type'),
-                                  config.get('input_data_selection', 'ls_prediction_labels'),
-                                  config.get('input_data_selection', 'ls_test_cell_lines'),
-                                  datetime.now()))
-                        print(30 * "=")    
+                            print(40 * '=')
+                            print(40 * '=')
+                            print(
+                                "Starting {0} with random seed {1} for model {2}, for label {3}, with test cell line {4} at {5}".format(
+                                    config.get('input_data_selection', 'rbp_input_for_regressor'),
+                                    config.get('general', 'random_seed'),
+                                    config.get('model_selection', 'model_type'),
+                                    config.get('input_data_selection', 'ls_prediction_labels'),
+                                    config.get('input_data_selection', 'ls_test_cell_lines'),
+                                    datetime.now()))
+                        print(30 * "=")
                         # start neptune session
                         run = neptune.init_run(
                             project=config.get('general', 'neptune_project'),
@@ -106,6 +109,7 @@ def several_runs(config, ls_labels, ls_models, ls_input_settings, ls_transcript_
                             print('value selected for rbp_input_for_regressor is not supported. Terminating script.')
 
                         run.stop()
+
 
 if __name__ == "__main__":
     main()

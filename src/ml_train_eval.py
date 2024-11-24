@@ -1,15 +1,9 @@
 import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=DeprecationWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
 import random
 import os
 import pickle
-import pybedtools
-from pybedtools.bedtool import BedTool
 import numpy as np
 import pandas as pd
-from math import sqrt, log, log2
 import matplotlib.pyplot as plt
 import seaborn as sns
 import neptune
@@ -17,26 +11,22 @@ import neptune.integrations.sklearn as npt_utils
 from neptune.integrations.tensorflow_keras import NeptuneCallback
 from neptune.utils import stringify_unsupported
 from joblib import dump, load
-from datetime import datetime, date
-from operator import itemgetter
-from sklearn.metrics import precision_recall_curve, PrecisionRecallDisplay, average_precision_score, r2_score
-from sklearn.metrics import roc_curve, auc, classification_report, mean_absolute_error, mean_squared_error
+from sklearn.metrics import r2_score
+from sklearn.metrics import classification_report, mean_absolute_error, mean_squared_error
 from sklearn.linear_model import LinearRegression, Lasso
 from sklearn.neural_network import MLPClassifier, MLPRegressor
-from sklearn.preprocessing import MinMaxScaler, label_binarize, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeClassifier
-from sklearn.model_selection import RepeatedKFold, KFold, cross_val_score
-from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.model_selection import RepeatedKFold
+from sklearn.pipeline import Pipeline
 from sklearn.inspection import permutation_importance
-from sklearn.model_selection import train_test_split
-from scipy.stats import pearsonr, spearmanr
-from sklearn.svm import SVR
-from xgboost import XGBClassifier, XGBRegressor
-from xgboost import plot_importance
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.python.client import device_lib
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=DeprecationWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -279,10 +269,12 @@ def run_with_multiple_rand_seeds(df_train_data, df_test_data, ls_features_cols, 
             print("average Pearson Correlation ", np.mean(np.array(ls_p_cor)))
 
         df_test_data_pred['avg_pred'] = df_test_data_pred['avg_pred'] / len(ls_random_seeds)
-        df_test_data_pred.to_csv(res_path + 'version_' + version + '_'+ model_type +'_test_dataset_pred.csv', sep='|')
+        df_test_data_pred.to_csv(res_path + 'version_' + version + '_' + model_type + '_test_dataset_pred.csv', sep='|')
         if verbose:
-            print("test results saved to " + res_path + 'version_' + version + '_'+ model_type + '_test_dataset_pred.csv')
-        run['data/test_dataset_pred'].track_files(res_path + 'version_' + version + '_'+ model_type + '_test_dataset_pred.csv')
+            print(
+                "test results saved to " + res_path + 'version_' + version + '_' + model_type + '_test_dataset_pred.csv')
+        run['data/test_dataset_pred'].track_files(
+            res_path + 'version_' + version + '_' + model_type + '_test_dataset_pred.csv')
     elif model_category == 'classifier':
         run['avg_pipe_score'] = np.mean(np.array(ls_pipe_score))
         if verbose:
@@ -442,13 +434,15 @@ def run_with_presplitted_data_with_multiple_rand_seeds(df_train_data, df_test_da
 
         df_test_data_pred['avg_pred_' + pred_label.lower()] = df_test_data_pred['avg_pred_' + pred_label.lower()] / len(
             ls_random_seeds)
-        df_test_data_pred.to_csv(res_path + 'version_' + version + '_rand_' + str(rand_state)  + '_'+ model_type +
+        df_test_data_pred.to_csv(res_path + 'version_' + version + '_rand_' + str(rand_state) + '_' + model_type +
                                  '_test_dataset_pred.csv', sep='|')
         if verbose:
-            print("test results saved to " + res_path + 'version_' + version + '_rand_' + str(rand_state)  + '_'+ model_type +
+            print("test results saved to " + res_path + 'version_' + version + '_rand_' + str(
+                rand_state) + '_' + model_type +
                   '_test_dataset_pred.csv')
-        run['data/test_dataset_pred'].track_files(res_path + 'version_' + version + '_rand_' + str(rand_state) + '_'+ model_type +
-                                                  '_test_dataset_pred.csv')
+        run['data/test_dataset_pred'].track_files(
+            res_path + 'version_' + version + '_rand_' + str(rand_state) + '_' + model_type +
+            '_test_dataset_pred.csv')
     elif model_category == 'classifier':
         run['avg_pipe_score'] = np.mean(np.array(dict_res_labels['ls_pipe_score_' + pred_label.lower()]))
         if verbose:
@@ -680,7 +674,8 @@ def train_pred_linear_gbr_model(x_train, y_train, x_test, y_test, i_fold, run, c
     # train and predict
     pipe.fit(x_train, y_train)
     dump(pipe, res_path + 'fitted_model_' + model_type + '_rs_' + config.get('general', 'random_seed') + '.joblib')
-    with open(res_path + 'fitted_model_' + model_type + '_rs_' + config.get('general', 'random_seed') +'.pkl','wb') as f:
+    with open(res_path + 'fitted_model_' + model_type + '_rs_' + config.get('general', 'random_seed') + '.pkl',
+              'wb') as f:
         pickle.dump(pipe, f)
     y_pred = pipe.predict(x_test)
     # Note: we return unscaled unsorted coefficients
@@ -691,7 +686,6 @@ def train_pred_linear_gbr_model(x_train, y_train, x_test, y_test, i_fold, run, c
         df_coefs = pd.DataFrame(pipe.named_steps['model'].coef_, columns=['coefficients'],
                                 index=x_train.columns)
     perm_imp = permutation_importance(model, x_test, y_test, n_repeats=perm_repeat, random_state=rand_state)
-
 
     if model_category == 'regressor':
         run['fold_seed_' + str(i_fold) + "model_summary"] = stringify_unsupported(npt_utils.create_regressor_summary(
@@ -768,7 +762,8 @@ def train_pred_nn_model(x_train, y_train, x_test, y_test, i_fold, run, config):
         pipe.fit(x_train, y_train)
         dump(pipe, res_path + 'fitted_model_' + model_type + '_rs_' + config.get('general', 'random_seed') + '.joblib')
         import pickle
-        with open(res_path + 'fitted_model_' + model_type + '_rs_' + config.get('general', 'random_seed') +'.pkl','wb') as f:
+        with open(res_path + 'fitted_model_' + model_type + '_rs_' + config.get('general', 'random_seed') + '.pkl',
+                  'wb') as f:
             pickle.dump(pipe, f)
         y_pred = pipe.predict(x_test)
         score_val = pipe.score(x_test, y_test)
