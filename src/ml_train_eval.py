@@ -743,7 +743,6 @@ def train_pred_nn_model(x_train, y_train, x_test, y_test, i_fold, run, config):
         else:
             print('invalid config value for pipeline_scaling_method, rolling back to default minmax')
             scale_prep = MinMaxScaler()
-        # TODO: does random state need to be set during model instance creation?
         model = MLPRegressor(n_iter_no_change=patience,
                              learning_rate='adaptive',
                              activation='relu',
